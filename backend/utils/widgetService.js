@@ -58,11 +58,22 @@ const updateMarket = async () => {
                     const meta = result.meta;
                     const validCloses = result.indicators.quote[0].close.filter(c => c !== null);
                     
-                    const price = meta.regularMarketPrice || (validCloses.length > 0 ? validCloses[validCloses.length - 1] : 0);
-                    const prev = meta.previousClose || (validCloses.length > 1 ? validCloses[validCloses.length - 2] : price);
+                    const price = meta.regularMarketPrice ?? (validCloses.length > 0 ? validCloses[validCloses.length - 1] : 0);
+                    // Robust previousClose extraction. Fallback to chart data if meta.previousClose is missing.
+                    let prev = meta.previousClose;
+                    if (prev === undefined || prev === null) {
+                        prev = (validCloses.length > 1) ? validCloses[validCloses.length - 2] : price;
+                    }
                     
-                    return { id: sym, price, prev, high: meta.regularMarketDayHigh || price, low: meta.regularMarketDayLow || price };
+                    return { 
+                        id: sym, 
+                        price, 
+                        prev: prev || price, // Ensure never zero if price exists
+                        high: meta.regularMarketDayHigh || price, 
+                        low: meta.regularMarketDayLow || price 
+                    };
                 } catch (e) { 
+                    console.error(`[Market API Error] Failed to fetch ${sym}:`, e.message);
                     return { id: sym, price: 0, prev: 0, high: 0, low: 0 }; 
                 }
             })
@@ -102,6 +113,9 @@ const updateMarket = async () => {
 
         if (marketData.length > 0) {
             await Widget.findOneAndUpdate({ type: 'market' }, { data: marketData, lastUpdated: new Date() }, { upsert: true });
+            console.log(`[Market Update] Success. Updated ${marketData.length} items.`);
+        } else {
+            console.warn('[Market Update] No data items were pushed. Checking database state...');
         }
     } catch (err) {
         console.error('Market Update Error:', err.message);
