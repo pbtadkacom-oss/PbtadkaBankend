@@ -2,30 +2,34 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const sendOtpEmail = async (to, otp) => {
-    // Port 465 (SSL) + forcing IPv4 to resolve ENETUNREACH/IPv6 issues on Render
+    // Port 587 (STARTTLS) + forcing IPv4 to resolve TIMEOUT/ENETUNREACH issues on Render
     const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // SSL
+        port: 587,
+        secure: false, // TLS
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
         },
-        // Force IPv4
+        // Force IPv4 to avoid Render's broken IPv6 routing
         family: 4,
         tls: {
-            rejectUnauthorized: false
+            // Do not fail on invalid certs
+            rejectUnauthorized: false,
+            // also try forcing IPv4 in TLS options
+            family: 4
         },
-        connectionTimeout: 20000,
-        greetingTimeout: 20000,
-        socketTimeout: 20000
+        connectionTimeout: 30000, // 30s
+        greetingTimeout: 30000,
+        socketTimeout: 30000
     });
 
     // Diagnostic check
     console.log('[Email Service] Config Check:', {
         hasUser: !!process.env.EMAIL_USER,
         hasPass: !!process.env.EMAIL_PASS,
-        nodeEnv: process.env.NODE_ENV
+        nodeEnv: process.env.NODE_ENV,
+        port: 587
     });
 
     const mailOptions = {
