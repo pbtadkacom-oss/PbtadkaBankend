@@ -6,8 +6,8 @@ require('dotenv').config();
  * This now uses Resend API to bypass all Render SMTP blocks.
  */
 const sendOtpEmail = async (to, otp) => {
-    // Shuru mein onboarding@resend.dev use karna padta hai jab tak domain verify na ho
-    const SENDER = 'PB Tadka <onboarding@resend.dev>';
+    // Domain verify ho chuka hai, ab professional email use kar sakte hain
+    const SENDER = 'PB Tadka <noreply@pbtadka.com>';
     const API_KEY = 're_4T4D7ZLt_MVn11CzDfHHbTJrLy8uSSuBV';
 
     console.log('[Email Service] Calling Resend API for:', to);
